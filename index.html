@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Fluxograma de Grade Curricular</title>
+    <style>
+        :root {
+            --bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text: #222;
+            --muted: #666;
+            --border: #ddd;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        header {
+            padding: 20px 16px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0 0 6px 0;
+            font-size: 22px;
+        }
+
+        header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 12px 28px;
+            box-sizing: border-box;
+        }
+
+        .canvas {
+            position: relative;
+            width: 100%;
+            max-width: 1400px;
+            height: 800px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 18px auto;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        .box {
+            position: absolute;
+            width: 100px;
+            height: 70px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            text-align: center;
+            cursor: move;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 5px;
+            box-sizing: border-box;
+        }
+
+        .box.selected {
+            border: 2px solid #ff0000;
+            z-index: 100;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 0 auto 12px auto;
+            padding: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            max-width: 1400px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        .label {
+            margin-bottom: 10px;
+        }
+
+        /* Cores para os diferentes tipos de disciplinas */
+        .complementares {
+            background-color: #DDA0DD;
+            /* Lilás/Roxo claro */
+        }
+
+        .matematica {
+            background-color: #A3D977;
+            /* Verde claro */
+        }
+
+        .desenvolvimento {
+            background-color: #FFEB3B;
+            /* Amarelo */
+        }
+
+        .informaticaOutras {
+            background-color: #FFB656;
+            /* Laranja */
+        }
+
+        .redes {
+            background-color: #38a2dc;
+            /* Azul médio */
+        }
+
+        .extensao {
+            background-color: #ffffff;
+            /* Branco */
+        }
+
+        .optativa {
+            background-color: #bfbfbf;
+            /* Cinza escuro */
+        }
+
+        .column-line {
+            position: absolute;
+            top: 0;
+            width: 1px;
+            height: 100%;
+            background-color: #888;
+            border-left: 1px dashed #888;
+        }
+
+        .period-label {
+            position: absolute;
+            text-align: center;
+            width: 150px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #0077cc;
+            color: white;
+            padding: 8px 14px;
+            border: 1px solid #006bb8;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover { background-color: #006bb8; }
+        #addCategoryBtn { background-color: #00a884; border-color: #009673; }
+        #addCategoryBtn:hover { background-color: #009673; }
+        #alignHBtn, #alignVBtn, #distributeHBtn, #distributeVBtn { background-color: #7b5fb2; border-color: #6c51a0; }
+        #alignHBtn:hover, #alignVBtn:hover, #distributeHBtn:hover, #distributeVBtn:hover { background-color: #6c51a0; }
+
+        /* Modal para adicionar novas categorias */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 300px;
+            border-radius: 5px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        /* Context menu */
+        #contextMenu,
+        #canvasContextMenu {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        #contextMenu ul,
+        #canvasContextMenu ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #contextMenu li,
+        #canvasContextMenu li {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        #contextMenu li:hover,
+        #canvasContextMenu li:hover {
+            background-color: #f1f1f1;
+        }
+
+        #contextMenu .submenu {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: 0;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #contextMenu li:hover .submenu {
+            display: block;
+        }
+
+        /* Legenda */
+        .legend {
+            margin-top: 18px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            width: 100%;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+            margin-bottom: 5px;
+            font-size: 12px;
+            /* Texto da legenda menor */
+        }
+
+        .legend-color {
+            width: 15px;
+            /* Tamanho reduzido */
+            height: 15px;
+            /* Tamanho reduzido */
+            margin-right: 5px;
+            border: 1px solid #333;
+            border-radius: 3px;
+        }
+
+        /* Resumo de cargas e percentuais */
+        .summary {
+            margin-top: 18px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            width: 100%;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        .summary h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px; /* Aumenta um pouco o tamanho do título */
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px; /* Aumenta levemente a fonte da tabela */
+        }
+
+        .summary-table th,
+        .summary-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        /* Estilo dos links no cabeçalho do resumo */
+        .summary-table th a {
+            color: inherit;
+            text-decoration: underline;
+        }
+
+        /* Destaque leve para a coluna da Matriz Proposta */
+        .summary-table thead th:nth-child(2),
+        .summary-table tbody td:nth-child(2) {
+            background-color: #fffbea; /* amarelo bem suave */
+        }
+
+        .summary-highlight {
+            background-color: #fff6f6;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Grade Curricular – Sistemas de Informação</h1>
+        <p>Editor de Fluxograma • Exibição inicial na configuração da versão proposta em 13/09/24</p>
+    </header>
+
+    <div class="toolbar">
+        <button id="exportBtn">Exportar como SVG</button>
+        <button id="addCategoryBtn">Adicionar Categoria</button>
+        <button id="alignVBtn">Alinhar Horizontalmente</button>
+        <button id="alignHBtn">Alinhar Verticalmente</button>
+        <button id="distributeHBtn">Distribuir Horizontalmente</button>
+        <button id="distributeVBtn">Distribuir Verticalmente</button>
+        <button id="clearSelectionBtn">Limpar Seleção</button>
+    </div>
+
+    <div class="container">
+        <div class="canvas" id="canvas">
+            <!-- Linhas delimitadoras de períodos -->
+            <div class="column-line" style="left: 175px;"></div>
+            <div class="column-line" style="left: 350px;"></div>
+            <div class="column-line" style="left: 525px;"></div>
+            <div class="column-line" style="left: 700px;"></div>
+            <div class="column-line" style="left: 875px;"></div>
+            <div class="column-line" style="left: 1050px;"></div>
+            <div class="column-line" style="left: 1225px;"></div>
+            <div class="column-line" style="left: 1400px;"></div>
+
+            <!-- Rótulos de períodos -->
+            <div class="period-label" style="left: 12.5px; top: 20px;">1° Período</div>
+            <div class="period-label" style="left: 187.5px; top: 20px;">2° Período</div>
+            <div class="period-label" style="left: 362.5px; top: 20px;">3° Período</div>
+            <div class="period-label" style="left: 537.5px; top: 20px;">4° Período</div>
+            <div class="period-label" style="left: 712.5px; top: 20px;">5° Período</div>
+            <div class="period-label" style="left: 887.5px; top: 20px;">6° Período</div>
+            <div class="period-label" style="left: 1062.5px; top: 20px;">7° Período</div>
+            <div class="period-label" style="left: 1237.5px; top: 20px;">8° Período</div>
+
+            <!-- As disciplinas serão criadas pelo JavaScript -->
+        </div>
+
+        <!-- Legenda das categorias -->
+        <div class="legend" id="legend"></div>
+
+        <!-- Resumo de totais e percentuais -->
+        <div class="summary" id="summary"></div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="contextMenu">
+        <ul id="contextMenuList">
+            <li id="editDiscipline">Editar Disciplina</li>
+            <li id="changeCategory">Alterar Categoria
+                <div class="submenu">
+                    <ul id="categoryList">
+                        <!-- Categorias serão adicionadas aqui dinamicamente -->
+                    </ul>
+                </div>
+            </li>
+            <li id="removeDiscipline">Remover Disciplina</li>
+        </ul>
+    </div>
+
+    <!-- Context Menu para o Canvas -->
+    <div id="canvasContextMenu">
+        <ul>
+            <li id="addDiscipline">Adicionar Disciplina</li>
+        </ul>
+    </div>
+
+    <!-- Modal para adicionar nova categoria -->
+    <div id="addCategoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Adicionar Nova Categoria</h3>
+            <div class="form-group">
+                <label for="categoryName">Nome da Categoria:</label>
+                <input type="text" id="categoryName" placeholder="Ex: Formação Específica">
+            </div>
+            <div class="form-group">
+                <label for="categoryColor">Cor (código hexadecimal):</label>
+                <input type="color" id="categoryColor" value="#B39DDB">
+            </div>
+            <button id="saveCategoryBtn">Salvar</button>
+        </div>
+    </div>
+
+    <!-- Modal para adicionar nova disciplina -->
+    <div id="addDisciplineModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeDisciplineModal">&times;</span>
+            <h3>Adicionar Nova Disciplina</h3>
+            <div class="form-group">
+                <label for="disciplineName">Nome da Disciplina:</label>
+                <input type="text" id="disciplineName" placeholder="Ex: Algoritmos">
+            </div>
+            <div class="form-group">
+                <label for="disciplineCH">Carga Horária:</label>
+                <input type="text" id="disciplineCH" placeholder="Ex: 60h">
+            </div>
+            <div class="form-group">
+                <label for="disciplineCategory">Categoria:</label>
+                <select id="disciplineCategory">
+                    <!-- Categorias serão adicionadas aqui dinamicamente -->
+                </select>
+            </div>
+            <button id="saveDisciplineBtn">Salvar</button>
+        </div>
+    </div>
+
+    <!-- Modal para editar disciplina -->
+    <div id="editDisciplineModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeEditDisciplineModal">&times;</span>
+            <h3>Editar Disciplina</h3>
+            <div class="form-group">
+                <label for="editDisciplineName">Nome da Disciplina:</label>
+                <input type="text" id="editDisciplineName" placeholder="Ex: Algoritmos">
+            </div>
+            <div class="form-group">
+                <label for="editDisciplineCH">Carga Horária:</label>
+                <input type="text" id="editDisciplineCH" placeholder="Ex: 60h">
+            </div>
+            <div class="form-group">
+                <label for="editDisciplineCategory">Categoria:</label>
+                <select id="editDisciplineCategory">
+                    <!-- Categorias serão adicionadas aqui dinamicamente -->
+                </select>
+            </div>
+            <button id="updateDisciplineBtn">Atualizar</button>
+        </div>
+    </div>
+
+    <script>
+        // Configurações iniciais
+        let categories = {
+            'complementares': { name: 'Complementares', color: '#DDA0DD' },
+            'matematica': { name: 'Matemática', color: '#A3D977' },
+            'desenvolvimento': { name: 'Desenvolvimento', color: '#FFEB3B' },
+            'redes': { name: 'Redes', color: '#38a2dc' },
+            'informaticaOutras': { name: 'Informática (Outras)', color: '#FFB656' },
+        };
+
+        let selectedElement = null;
+        let selectedElements = [];
+        let currentContextMenuTarget = null;
+        let nextDisciplineId = 0; // Variável para controlar os IDs das novas disciplinas
+        let currentPeriod = 0; // Armazena o período atual ao adicionar nova disciplina
+        let clickX = 0; // Posição X do clique para nova disciplina
+        let clickY = 0; // Posição Y do clique para nova disciplina
+
+        // Dados das disciplinas - ajustados com top reduzido para subir as disciplinas
+        const disciplinas = [
+            // 1º período
+            { id: 1, nome: "Lógica", cargaHoraria: "60h", left: 37.5, top: 80, tipo: "matematica", periodo: 1 },
+            { id: 2, nome: "Programação I", cargaHoraria: "90h", left: 37.5, top: 230, tipo: "desenvolvimento", periodo: 1 },
+            { id: 3, nome: "Sociologia", cargaHoraria: "30h", left: 37.5, top: 305, tipo: "complementares", periodo: 1 },
+            { id: 4, nome: "Fund. da Administração", cargaHoraria: "30h", left: 37.5, top: 380, tipo: "complementares", periodo: 1 },
+            { id: 5, nome: "Inglês Instrumental", cargaHoraria: "30h", left: 37.5, top: 455, tipo: "complementares", periodo: 1 },
+            { id: 6, nome: "Fund. de Sistemas de Informação", cargaHoraria: "60h", left: 37.5, top: 530, tipo: "informaticaOutras", periodo: 1 },
+
+            // 2º período
+            { id: 7, nome: "Matemática Discreta", cargaHoraria: "60h", left: 212.5, top: 80, tipo: "matematica", periodo: 2 },
+            { id: 8, nome: "Org. e Arquit. de Computadores", cargaHoraria: "60h", left: 212.5, top: 155, tipo: "redes", periodo: 2 },
+            { id: 9, nome: "Programação II", cargaHoraria: "90h", left: 212.5, top: 230, tipo: "desenvolvimento", periodo: 2 },
+            { id: 10, nome: "Desenvolvimento Web I", cargaHoraria: "60h", left: 212.5, top: 305, tipo: "desenvolvimento", periodo: 2 },
+            { id: 11, nome: "Metodologia da Pesquisa", cargaHoraria: "30h", left: 212.5, top: 530, tipo: "informaticaOutras", periodo: 2 },
+
+            // 3º período
+            { id: 12, nome: "Introdução ao Cálculo", cargaHoraria: "60h", left: 387.5, top: 80, tipo: "matematica", periodo: 3 },
+            { id: 13, nome: "Sistemas Operacionais", cargaHoraria: "60h", left: 387.5, top: 155, tipo: "redes", periodo: 3 },
+            { id: 14, nome: "Estruturas de Dados I", cargaHoraria: "60h", left: 387.5, top: 230, tipo: "desenvolvimento", periodo: 3 },
+            { id: 15, nome: "Ética e Legislação", cargaHoraria: "30h", left: 387.5, top: 305, tipo: "complementares", periodo: 3 },
+            { id: 16, nome: "Gestão de Negócios", cargaHoraria: "60h", left: 387.5, top: 380, tipo: "complementares", periodo: 3 },
+            { id: 17, nome: "Comunicação Empresarial", cargaHoraria: "30h", left: 387.5, top: 455, tipo: "complementares", periodo: 3 },
+
+            // 4º período
+            { id: 18, nome: "Cálculo I", cargaHoraria: "60h", left: 562.5, top: 80, tipo: "matematica", periodo: 4 },
+            { id: 19, nome: "Redes de Computadores", cargaHoraria: "60h", left: 562.5, top: 155, tipo: "redes", periodo: 4 },
+            { id: 20, nome: "Análise de Sistemas", cargaHoraria: "60h", left: 562.5, top: 230, tipo: "desenvolvimento", periodo: 4 },
+            { id: 21, nome: "Desenvolvimento Web II", cargaHoraria: "60h", left: 562.5, top: 305, tipo: "desenvolvimento", periodo: 4 },
+            { id: 22, nome: "POO I", cargaHoraria: "60h", left: 562.5, top: 380, tipo: "desenvolvimento", periodo: 4 },
+            { id: 23, nome: "Banco de Dados I", cargaHoraria: "60h", left: 562.5, top: 455, tipo: "desenvolvimento", periodo: 4 },
+
+            // 5º período
+            { id: 25, nome: "Serviço de Redes para Internet", cargaHoraria: "60h", left: 737.5, top: 155, tipo: "redes", periodo: 5 },
+            { id: 26, nome: "Projeto de Sistemas", cargaHoraria: "60h", left: 737.5, top: 230, tipo: "desenvolvimento", periodo: 5 },
+            { id: 27, nome: "Desenvolvimento Web III", cargaHoraria: "60h", left: 737.5, top: 305, tipo: "desenvolvimento", periodo: 5 },
+            { id: 28, nome: "POO II", cargaHoraria: "60h", left: 737.5, top: 380, tipo: "desenvolvimento", periodo: 5 },
+            { id: 29, nome: "Banco de Dados II", cargaHoraria: "60h", left: 737.5, top: 455, tipo: "desenvolvimento", periodo: 5 },
+            { id: 30, nome: "Extensão I", cargaHoraria: "75h", left: 737.5, top: 530, tipo: "informaticaOutras", periodo: 5 },
+
+            // 6º período
+            { id: 30, nome: "Probabilidade e Estatística", cargaHoraria: "60h", left: 912.5, top: 80, tipo: "matematica", periodo: 6 },
+            { id: 32, nome: "Sistemas Distribuídos", cargaHoraria: "60h", left: 912.5, top: 155, tipo: "redes", periodo: 6 },
+            { id: 31, nome: "Engenharia de Software", cargaHoraria: "60h", left: 912.5, top: 230, tipo: "desenvolvimento", periodo: 6 },
+            { id: 33, nome: "Desenv. p/ Disp. Móveis", cargaHoraria: "60h", left: 912.5, top: 305, tipo: "desenvolvimento", periodo: 6 },
+            { id: 34, nome: "Estruturas de Dados II", cargaHoraria: "60h", left: 912.5, top: 380, tipo: "desenvolvimento", periodo: 6 },
+            { id: 35, nome: "Extensão II", cargaHoraria: "75h", left: 912.5, top: 530, tipo: "informaticaOutras", periodo: 6 },
+
+            // 7º período
+            { id: 36, nome: "Empreendedorismo", cargaHoraria: "30h", left: 1087.5, top: 80, tipo: "complementares", periodo: 7 },
+            { id: 37, nome: "Gestão de Projetos de Software", cargaHoraria: "60h", left: 1087.5, top: 230, tipo: "desenvolvimento", periodo: 7 },
+            { id: 38, nome: "Optativa I", cargaHoraria: "60h", left: 1087.5, top: 305, tipo: "informaticaOutras", periodo: 7 },
+            { id: 39, nome: "Inteligência Artificial", cargaHoraria: "60h", left: 1087.5, top: 380, tipo: "desenvolvimento", periodo: 7 },
+            { id: 40, nome: "Projeto de Diplomação I", cargaHoraria: "60h", left: 1087.5, top: 455, tipo: "informaticaOutras", periodo: 7 },
+            { id: 41, nome: "Extensão III", cargaHoraria: "75h", left: 1087.5, top: 530, tipo: "informaticaOutras", periodo: 7 },
+
+
+            // 8º período
+            { id: 42, nome: "Informática e Sociedade", cargaHoraria: "30h", left: 1262.5, top: 155, tipo: "informaticaOutras", periodo: 8 },
+            { id: 43, nome: "Lab. de Eng. de Software", cargaHoraria: "60h", left: 1262.5, top: 230, tipo: "desenvolvimento", periodo: 8 },
+            { id: 44, nome: "Optativa II", cargaHoraria: "60h", left: 1262.5, top: 305, tipo: "informaticaOutras", periodo: 8 },
+            { id: 45, nome: "Optativa III", cargaHoraria: "60h", left: 1262.5, top: 380, tipo: "informaticaOutras", periodo: 8 },
+            { id: 46, nome: "Projeto de Diplomação II", cargaHoraria: "60h", left: 1262.5, top: 455, tipo: "informaticaOutras", periodo: 8 },
+            { id: 47, nome: "Extensão IV", cargaHoraria: "75h", left: 1262.5, top: 530, tipo: "informaticaOutras", periodo: 8 }
+        ];
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const canvas = document.getElementById('canvas');
+
+            // Encontrar o maior ID existente para o controle de novas disciplinas
+            nextDisciplineId = Math.max(...disciplinas.map(d => d.id)) + 1;
+
+            // Variável para controlar se a tecla Ctrl está pressionada
+            let ctrlPressed = false;
+
+            // Detectar Ctrl pressionado
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Control' || e.key === 'Meta') {
+                    ctrlPressed = true;
+                }
+            });
+
+            // Detectar Ctrl liberado
+            document.addEventListener('keyup', function (e) {
+                if (e.key === 'Control' || e.key === 'Meta') {
+                    ctrlPressed = false;
+                }
+            });
+
+            // Perder o foco na janela também deve resetar o estado da tecla Ctrl
+            window.addEventListener('blur', function () {
+                ctrlPressed = false;
+            });
+
+            // Criar as disciplinas conforme a ordem dos IDs em cada período
+            disciplinas.forEach(disc => {
+                const box = document.createElement('div');
+                box.className = `box ${disc.tipo}`;
+                box.innerHTML = `<strong>${disc.nome}</strong><br>${disc.cargaHoraria}`;
+                box.style.left = `${disc.left}px`;
+                box.style.top = `${disc.top}px`;
+                box.setAttribute('data-id', disc.id);
+                box.setAttribute('data-type', disc.tipo);
+                box.setAttribute('data-period', disc.periodo);
+                box.setAttribute('data-ch', disc.cargaHoraria);
+
+                // Adicionar evento de mousedown para selecionar/desselecionar
+                box.addEventListener('mousedown', function (e) {
+                    // Apenas o botão esquerdo
+                    if (e.button !== 0) return;
+
+                    // Se ctrl não estiver pressionado, limpar seleção anterior
+                    if (!ctrlPressed) {
+                        clearSelection();
+                    }
+
+                    // Alternar seleção do elemento atual
+                    if (box.classList.contains('selected') && ctrlPressed) {
+                        box.classList.remove('selected');
+                        selectedElements = selectedElements.filter(el => el !== box);
+                    } else {
+                        box.classList.add('selected');
+                        if (!selectedElements.includes(box)) {
+                            selectedElements.push(box);
+                        }
+                    }
+
+                    e.stopPropagation();
+                });
+
+                // Adicionar menu de contexto
+                box.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+
+                    // Esconder o menu de contexto do canvas se estiver visível
+                    document.getElementById('canvasContextMenu').style.display = 'none';
+
+                    // Armazenar a referência do elemento alvo
+                    currentContextMenuTarget = box;
+
+                    // Posicionar e mostrar o menu de contexto
+                    const contextMenu = document.getElementById('contextMenu');
+                    contextMenu.style.left = `${e.pageX}px`;
+                    contextMenu.style.top = `${e.pageY}px`;
+                    contextMenu.style.display = 'block';
+
+                    e.stopPropagation();
+                });
+
+                // Adicionar funcionalidade de arrastar
+                makeDraggable(box);
+
+                canvas.appendChild(box);
+            });
+
+            // Calcular e exibir os totais de carga horária para cada período
+            calculatePeriodTotals();
+
+            // Limpar seleção ao clicar no canvas
+            canvas.addEventListener('mousedown', function (e) {
+                if (e.target === canvas) {
+                    clearSelection();
+                }
+            });
+
+            // Adicionar menu de contexto para o canvas
+            canvas.addEventListener('contextmenu', function (e) {
+                // Se o clique foi realmente no canvas (não em uma disciplina)
+                if (e.target === canvas) {
+                    e.preventDefault();
+
+                    // Ocultar o menu de contexto das disciplinas se estiver visível
+                    document.getElementById('contextMenu').style.display = 'none';
+
+                    // Determinar o período baseado na posição X do clique
+                    currentPeriod = determinarPeriodo(e.clientX);
+                    clickX = e.clientX;
+                    clickY = e.clientY;
+
+                    // Posicionar e mostrar o menu de contexto do canvas
+                    const canvasContextMenu = document.getElementById('canvasContextMenu');
+                    canvasContextMenu.style.left = `${e.pageX}px`;
+                    canvasContextMenu.style.top = `${e.pageY}px`;
+                    canvasContextMenu.style.display = 'block';
+                }
+            });
+
+            // Inicializar o menu de contexto
+            updateContextMenu();
+
+            // Criar a legenda
+            createLegend();
+
+            // Inicializar eventos do menu de contexto
+            initializeContextMenuEvents();
+
+            // Botões da barra de ferramentas
+            document.getElementById('exportBtn').addEventListener('click', exportToSVG);
+            document.getElementById('addCategoryBtn').addEventListener('click', showAddCategoryModal);
+            document.getElementById('alignHBtn').addEventListener('click', alignHorizontal);
+            document.getElementById('alignVBtn').addEventListener('click', alignVertical);
+            document.getElementById('distributeHBtn').addEventListener('click', distributeHorizontal);
+            document.getElementById('distributeVBtn').addEventListener('click', distributeVertical);
+            document.getElementById('clearSelectionBtn').addEventListener('click', clearSelection);
+
+            // Modal de categorias
+            document.getElementById('saveCategoryBtn').addEventListener('click', saveNewCategory);
+
+            // Modal de disciplinas
+            document.getElementById('saveDisciplineBtn').addEventListener('click', saveNewDiscipline);
+
+            // Fechar modais ao clicar no X
+            document.querySelectorAll('.close').forEach(closeBtn => {
+                closeBtn.addEventListener('click', () => {
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        modal.style.display = 'none';
+                    });
+                });
+            });
+
+            document.getElementById('closeEditDisciplineModal').addEventListener('click', () => {
+                document.getElementById('editDisciplineModal').style.display = 'none';
+            });
+
+            // Fechar modais ao clicar fora deles
+            window.addEventListener('click', (event) => {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    if (event.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            });
+
+            // Ocultar menu de contexto ao clicar em outro lugar
+            document.addEventListener('click', () => {
+                document.getElementById('contextMenu').style.display = 'none';
+                document.getElementById('canvasContextMenu').style.display = 'none';
+            });
+
+            // Inicializar o dropdown de categorias no modal de disciplinas
+            updateDisciplineCategoryDropdown();
+        });
+
+        function initializeContextMenuEvents() {
+            // Evento para remover disciplina
+            document.getElementById('removeDiscipline').addEventListener('click', () => {
+                if (currentContextMenuTarget) {
+                    // Remover do DOM
+                    currentContextMenuTarget.remove();
+
+                    // Fechar o menu de contexto
+                    document.getElementById('contextMenu').style.display = 'none';
+
+                    // Recalcular os totais de carga horária
+                    calculatePeriodTotals();
+
+                    // Atualizar legenda com novos totais por categoria
+                    createLegend();
+
+                    // Limpar a referência
+                    currentContextMenuTarget = null;
+                }
+            });
+
+            // Evento para editar disciplina
+            document.getElementById('editDiscipline').addEventListener('click', () => {
+                if (currentContextMenuTarget) {
+                    // Abrir modal de edição e preencher com dados existentes
+                    const disciplineName = currentContextMenuTarget.querySelector('strong').textContent;
+                    const disciplineCH = currentContextMenuTarget.innerHTML.split('<br>')[1];
+                    const disciplineType = currentContextMenuTarget.getAttribute('data-type');
+
+                    document.getElementById('editDisciplineName').value = disciplineName;
+                    document.getElementById('editDisciplineCH').value = disciplineCH;
+
+                    // Atualizar e selecionar a categoria atual no dropdown
+                    updateEditDisciplineCategoryDropdown(disciplineType);
+
+                    // Exibir o modal
+                    document.getElementById('editDisciplineModal').style.display = 'block';
+
+                    // Fechar o menu de contexto
+                    document.getElementById('contextMenu').style.display = 'none';
+                }
+            });
+
+            // Evento para adicionar disciplina
+            document.getElementById('addDiscipline').addEventListener('click', function () {
+                // Abrir o modal de adicionar disciplina
+                const modal = document.getElementById('addDisciplineModal');
+                modal.style.display = 'block';
+
+                // Fechar o menu de contexto
+                document.getElementById('canvasContextMenu').style.display = 'none';
+
+                // Atualizar o dropdown de categorias
+                updateDisciplineCategoryDropdown();
+            });
+
+            // Evento para atualizar uma disciplina
+            document.getElementById('updateDisciplineBtn').addEventListener('click', updateDiscipline);
+        }
+
+        // Função para atualizar disciplina existente
+        function updateDiscipline() {
+            const nome = document.getElementById('editDisciplineName').value.trim();
+            const cargaHoraria = document.getElementById('editDisciplineCH').value.trim();
+            const tipo = document.getElementById('editDisciplineCategory').value;
+
+            if (nome && cargaHoraria && currentContextMenuTarget) {
+                // Atualizar os dados da disciplina
+                currentContextMenuTarget.innerHTML = `<strong>${nome}</strong><br>${cargaHoraria}`;
+
+                // Remover a classe da categoria anterior
+                const oldType = currentContextMenuTarget.getAttribute('data-type');
+                currentContextMenuTarget.classList.remove(oldType);
+
+                // Adicionar a nova classe
+                currentContextMenuTarget.classList.add(tipo);
+                currentContextMenuTarget.setAttribute('data-type', tipo);
+                currentContextMenuTarget.setAttribute('data-ch', cargaHoraria);
+
+                // Fechar o modal
+                document.getElementById('editDisciplineModal').style.display = 'none';
+
+                // Recalcular os totais de carga horária
+                calculatePeriodTotals();
+
+                // Atualizar legenda com novos totais por categoria
+                createLegend();
+
+                // Limpar a referência
+                currentContextMenuTarget = null;
+            }
+        }
+
+        // Função para calcular e exibir os totais de carga horária por período
+        function calculatePeriodTotals() {
+            // Remover totais existentes
+            const existingTotals = document.querySelectorAll('.period-total');
+            existingTotals.forEach(total => total.remove());
+
+            // Calcular totais para cada período (1 a 8)
+            for (let periodo = 1; periodo <= 8; periodo++) {
+                let totalHoras = 0;
+
+                // Selecionar todas as disciplinas do período atual
+                const disciplinasDoPeriodo = Array.from(document.querySelectorAll('.box')).filter(box => {
+                    // Verificar se a disciplina está posicionada dentro deste período
+                    const left = parseInt(box.style.left);
+                    return determinarPeriodoPorPosicao(left) === periodo;
+                });
+
+                // Somar as cargas horárias
+                disciplinasDoPeriodo.forEach(disc => {
+                    const cargaHoraria = disc.getAttribute('data-ch') || disc.innerHTML.split('<br>')[1];
+                    // Extrair apenas os números da carga horária (remover 'h')
+                    const horas = parseInt(cargaHoraria.replace(/\D/g, ''));
+                    if (!isNaN(horas)) {
+                        totalHoras += horas;
+                    }
+                });
+
+                // Calcular posição para o total (centralizado no período)
+                // Usar as mesmas posições centralizadas das disciplinas
+                const posicoesCentralizadas = [37.5, 212.5, 387.5, 562.5, 737.5, 912.5, 1087.5, 1262.5];
+                const columnPosition = posicoesCentralizadas[periodo - 1];
+
+                // Criar elemento para exibir o total
+                const totalElement = document.createElement('div');
+                totalElement.className = 'period-total';
+                totalElement.innerHTML = `<strong>Total: ${totalHoras}h</strong>`;
+                totalElement.style.position = 'absolute';
+                totalElement.style.width = '110px';
+                totalElement.style.textAlign = 'center';
+                totalElement.style.left = `${columnPosition - 10}px`; // Ajuste para centralizar
+                totalElement.style.top = '700px'; // posicionar abaixo das disciplinas
+                totalElement.style.fontWeight = 'bold';
+                totalElement.style.fontSize = '14px';
+                totalElement.style.backgroundColor = '#f0f0f0';
+                totalElement.style.padding = '5px';
+                totalElement.style.borderRadius = '5px';
+                totalElement.style.border = '1px solid #ddd';
+
+                // Adicionar ao canvas
+                document.getElementById('canvas').appendChild(totalElement);
+            }
+        }
+
+        // Função para determinar o período com base na posição X
+        function determinarPeriodoPorPosicao(left) {
+            // Limites dos períodos baseados na posição left
+            // Cada coluna tem 175px de largura
+            const limites = [
+                { max: 175, periodo: 1 },  // 1° período: 0 até 175px
+                { max: 350, periodo: 2 },  // 2° período: 175 até 350px
+                { max: 525, periodo: 3 },  // 3° período: 350 até 525px
+                { max: 700, periodo: 4 },  // 4° período: 525 até 700px
+                { max: 875, periodo: 5 },  // 5° período: 700 até 875px
+                { max: 1050, periodo: 6 }, // 6° período: 875 até 1050px
+                { max: 1225, periodo: 7 }, // 7° período: 1050 até 1225px
+                { max: 1400, periodo: 8 }  // 8° período: 1225 até 1400px
+            ];
+
+            for (const limite of limites) {
+                if (left <= limite.max) {
+                    return limite.periodo;
+                }
+            }
+
+            return 8; // Padrão para o 8° período, caso esteja além do último limite
+        }
+
+        // Função para atualizar o dropdown de categorias no modal de edição de disciplinas
+        function updateEditDisciplineCategoryDropdown(selectedType) {
+            const dropdown = document.getElementById('editDisciplineCategory');
+            dropdown.innerHTML = '';
+
+            for (let id in categories) {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = categories[id].name;
+
+                // Selecionar a categoria atual da disciplina
+                if (id === selectedType) {
+                    option.selected = true;
+                }
+
+                dropdown.appendChild(option);
+            }
+        }
+
+        function makeDraggable(element) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+            element.addEventListener('mousedown', dragMouseDown);
+
+            function dragMouseDown(e) {
+                if (e.button === 2) return; // Ignora o botão direito
+
+                e = e || window.event;
+                e.preventDefault();
+
+                // Obter posição do mouse no início
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                // Chamar função sempre que o cursor se mover
+                document.onmousemove = elementDrag;
+
+                // Trazer todos os elementos selecionados para frente
+                selectedElements.forEach(el => {
+                    el.style.zIndex = "1000";
+                });
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+
+                // Calcular nova posição
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+
+                // Mover todos os elementos selecionados
+                for (let el of selectedElements) {
+                    el.style.top = (el.offsetTop - pos2) + "px";
+                    el.style.left = (el.offsetLeft - pos1) + "px";
+                }
+            }
+
+            function closeDragElement() {
+                // Parar de mover quando soltar o mouse
+                document.onmouseup = null;
+                document.onmousemove = null;
+
+                // Restaurar z-index
+                selectedElements.forEach(el => {
+                    el.style.zIndex = "1";
+                });
+
+                // Atualizar totais de carga horária depois de mover
+                calculatePeriodTotals();
+
+                // Atualizar legenda com novos totais por categoria
+                createLegend();
+            }
+        }
+
+        // Função para mostrar o modal de adicionar categoria
+        function showAddCategoryModal() {
+            document.getElementById('addCategoryModal').style.display = 'block';
+        }
+
+        // Função para salvar uma nova categoria
+        function saveNewCategory() {
+            const name = document.getElementById('categoryName').value.trim();
+            const color = document.getElementById('categoryColor').value;
+
+            if (name) {
+                // Criar um identificador único para a categoria
+                const id = name.toLowerCase().replace(/\s+/g, '');
+
+                // Adicionar à lista de categorias
+                categories[id] = {
+                    name: name,
+                    color: color
+                };
+
+                // Adicionar estilo CSS para a nova categoria
+                const style = document.createElement('style');
+                style.innerHTML = `.${id} { background-color: ${color}; }`;
+                document.head.appendChild(style);
+
+                // Atualizar o menu de contexto
+                updateContextMenu();
+
+                // Atualizar a legenda
+                createLegend();
+
+                // Atualizar o dropdown de categorias no modal de disciplinas
+                updateDisciplineCategoryDropdown();
+
+                // Fechar o modal
+                document.getElementById('addCategoryModal').style.display = 'none';
+
+                // Limpar campos
+                document.getElementById('categoryName').value = '';
+            }
+        }
+
+        // Função para atualizar o menu de contexto com a lista de categorias
+        function updateContextMenu() {
+            const categoryList = document.getElementById('categoryList');
+            categoryList.innerHTML = '';
+
+            // Adicionar cada categoria como uma opção
+            for (let id in categories) {
+                const li = document.createElement('li');
+                li.textContent = categories[id].name;
+                li.style.backgroundColor = categories[id].color;
+                li.style.color = getContrastColor(categories[id].color);
+
+                li.addEventListener('click', (e) => {
+                    e.stopPropagation();
+
+                    if (currentContextMenuTarget) {
+                        // Remover a classe da categoria anterior
+                        const oldType = currentContextMenuTarget.getAttribute('data-type');
+                        currentContextMenuTarget.classList.remove(oldType);
+
+                        // Adicionar a nova classe
+                        currentContextMenuTarget.classList.add(id);
+                        currentContextMenuTarget.setAttribute('data-type', id);
+
+                        // Recalcular os totais de carga horária
+                        calculatePeriodTotals();
+
+                        // Atualizar legenda com novos totais por categoria
+                        createLegend();
+                    }
+
+                    document.getElementById('contextMenu').style.display = 'none';
+                });
+
+                categoryList.appendChild(li);
+            }
+        }
+
+        // Função para calcular totais de carga horária por categoria
+        function calculateCategoryTotals() {
+            const categoryTotals = {};
+
+            // Inicializar totais para todas as categorias
+            for (let id in categories) {
+                categoryTotals[id] = 0;
+            }
+
+            // Somar carga horária de cada disciplina atualmente no DOM
+            const disciplinasNoDom = document.querySelectorAll('.box');
+            disciplinasNoDom.forEach(disciplina => {
+                const tipo = disciplina.getAttribute('data-type');
+                const cargaHorariaText = disciplina.getAttribute('data-ch') || disciplina.innerHTML.split('<br>')[1];
+                const cargaHoraria = parseInt(cargaHorariaText.replace(/\D/g, ''));
+
+                if (categoryTotals.hasOwnProperty(tipo) && !isNaN(cargaHoraria)) {
+                    categoryTotals[tipo] += cargaHoraria;
+                }
+            });
+
+            return categoryTotals;
+        }
+
+        // Função para criar a legenda
+        function createLegend() {
+            const legend = document.getElementById('legend');
+            legend.innerHTML = '<h3>Legenda:</h3>';
+
+            // Calcular totais por categoria
+            const categoryTotals = calculateCategoryTotals();
+
+            // Criar um elemento para cada categoria
+            for (let id in categories) {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+
+                const colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                colorBox.style.backgroundColor = categories[id].color;
+
+                const text = document.createElement('span');
+                text.textContent = `${categories[id].name} (${categoryTotals[id]}h)`;
+
+                item.appendChild(colorBox);
+                item.appendChild(text);
+                legend.appendChild(item);
+            }
+
+            // Atualizar painel de resumo sempre que a legenda for recriada
+            updateSummary();
+        }
+
+        // Função para determinar a cor de contraste para texto
+        function getContrastColor(hexColor) {
+            // Converter hex para RGB
+            const r = parseInt(hexColor.substring(1, 3), 16);
+            const g = parseInt(hexColor.substring(3, 5), 16);
+            const b = parseInt(hexColor.substring(5, 7), 16);
+
+            // Calcular luminância
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+            // Retornar branco ou preto dependendo da luminância
+            return luminance > 0.5 ? '#000000' : '#ffffff';
+        }
+
+        // Formatação de percentual com vírgula
+        function formatPercent(value) {
+            return (Number.isFinite(value) ? value.toFixed(2) : '0.00').replace('.', ',') + '%';
+        }
+
+        // Atualiza o painel de resumo: totais e percentuais por áreas
+        function updateSummary() {
+            const summaryEl = document.getElementById('summary');
+            if (!summaryEl) return;
+
+            // Capturar foco atual e posição do cursor para restaurar após re-render
+            const activeEl = document.activeElement;
+            const prevFocusId = activeEl && activeEl.id ? activeEl.id : null;
+            const prevSelectionStart = (activeEl && typeof activeEl.selectionStart === 'number') ? activeEl.selectionStart : null;
+
+            const totals = calculateCategoryTotals();
+            const totalGeral = Object.values(totals).reduce((acc, v) => acc + v, 0);
+            const totalInformatica = (totals.desenvolvimento || 0) + (totals.redes || 0) + (totals.informaticaOutras || 0);
+
+            // Percentuais por área em relação ao total geral
+            const pct = {
+                complementares: totalGeral ? (totals.complementares || 0) * 100 / totalGeral : 0,
+                matematica: totalGeral ? (totals.matematica || 0) * 100 / totalGeral : 0,
+                desenvolvimento: totalGeral ? (totals.desenvolvimento || 0) * 100 / totalGeral : 0,
+                redes: totalGeral ? (totals.redes || 0) * 100 / totalGeral : 0,
+                informaticaOutras: totalGeral ? (totals.informaticaOutras || 0) * 100 / totalGeral : 0,
+            };
+
+            // Comparativo Desenvolvimento x Redes
+            const dev = totals.desenvolvimento || 0;
+            const red = totals.redes || 0;
+            const baseDevRed = dev + red;
+            const devPctOnly = baseDevRed ? (dev * 100 / baseDevRed) : 0;
+            const redPctOnly = baseDevRed ? (red * 100 / baseDevRed) : 0;
+
+
+            // Inicializar extras editáveis da Proposta: forçar padrões no carregamento
+            try {
+                if (!window.proposalExtras) {
+                    window.proposalExtras = { atividadesComplementares: 100, estagioObrigatorio: 200 };
+                    try { localStorage.setItem('proposalExtras', JSON.stringify(window.proposalExtras)); } catch (e) {}
+                }
+            } catch (e) { /* ignore */ }
+
+            const extrasAtividades = Number(window.proposalExtras.atividadesComplementares || 0);
+            const extrasEstagio = Number(window.proposalExtras.estagioObrigatorio || 0);
+
+            // Dados fixos das outras matrizes
+            const MATRIZ_CACHOEIRO_ATUAL = {
+                total: 2520,
+                totalInformatica: 1830,
+                desenvolvimento: 930,
+                redes: 300,
+                informaticaOutras: 600,
+                matematica: 360,
+                complementares: 330,
+                desenvolvimentoDisciplinas: 15,
+                redesDisciplinas: 5,
+                informaticaOutrasDisciplinas: 11,
+                obrigatorias: 2370,
+                optativas: 150,
+                extensao: 0,
+                atividadesComplementares: 75,
+                estagio: 480,
+                totalFinal: 3075,
+            };
+
+            const MATRIZ_SERRA_ATUAL = {
+                total: 2490,
+                totalInformatica: 1740,
+                desenvolvimento: 870,
+                redes: 180,
+                informaticaOutras: 690,
+                matematica: 360,
+                complementares: 390,
+                desenvolvimentoDisciplinas: 14,
+                redesDisciplinas: 3,
+                informaticaOutrasDisciplinas: 12,
+                obrigatorias: 2040,
+                optativas: 150,
+                extensao: 300,
+                atividadesComplementares: 75,
+                estagio: 435,
+                totalFinal: 3000,
+            };
+
+            // Percentuais fixos para a Matriz Cachoeiro Atual (com base nas constantes)
+            const devCach = MATRIZ_CACHOEIRO_ATUAL.desenvolvimento;
+            const redCach = MATRIZ_CACHOEIRO_ATUAL.redes;
+            const baseDevRedCach = devCach + redCach;
+            const pctDevCach = MATRIZ_CACHOEIRO_ATUAL.total ? (devCach * 100 / MATRIZ_CACHOEIRO_ATUAL.total) : 0;
+            const pctRedCach = MATRIZ_CACHOEIRO_ATUAL.total ? (redCach * 100 / MATRIZ_CACHOEIRO_ATUAL.total) : 0;
+            const devPctOnlyCach = baseDevRedCach ? (devCach * 100 / baseDevRedCach) : 0;
+            const redPctOnlyCach = baseDevRedCach ? (redCach * 100 / baseDevRedCach) : 0;
+
+            // Cálculos adicionais para a primeira coluna (Proposta)
+            const countByTipo = (tipo) => Array.from(document.querySelectorAll('.box'))
+                .filter(d => d.getAttribute('data-type') === tipo).length;
+
+            const sumByNomePrefix = (prefix) => Array.from(document.querySelectorAll('.box'))
+                .filter(d => (d.innerText || '').toLowerCase().startsWith(prefix.toLowerCase()))
+                .reduce((acc, el) => acc + parseInt((el.getAttribute('data-ch') || el.innerHTML.split('<br>')[1]).replace(/\D/g, '')), 0);
+
+            const extensaoCH = sumByNomePrefix('Extensão');
+            const optativasCH = sumByNomePrefix('Optativa');
+            const obrigatoriasCH = totalGeral - extensaoCH - optativasCH;
+            const totalFinalProposta = obrigatoriasCH + optativasCH + extensaoCH + extrasAtividades + extrasEstagio;
+
+            // Montar HTML do resumo em colunas
+            summaryEl.innerHTML = `
+                <h3>Resumo de Carga Horária</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Indicador</th>
+                            <th><a href="ifes-si-matrizproposta-2024-09-13.html" target="_blank" rel="noopener">Matriz Cachoeiro Proposta (13/09/24)</a></th>
+                            <th><a href="ifes-si-matriz-2013-03-01.html" target="_blank" rel="noopener">Matriz Cachoeiro Atual (01/03/13)</a></th>
+                            <th><a href="ifes-serra-matriz-2024-01-01.html" target="_blank" rel="noopener">Matriz Serra Atual (01/01/24)</a></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            <td><strong>${totalGeral}h</strong></td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.total}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.total}h</td>
+                        </tr>
+                        <tr>
+                            <td>Total Informática</td>
+                            <td>${totalInformatica}h</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.totalInformatica}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.totalInformatica}h</td>
+                        </tr>
+                        <tr>
+                            <td>Desenvolvimento</td>
+                            <td>${dev}h</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.desenvolvimento}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.desenvolvimento}h</td>
+                        </tr>
+                        <tr>
+                            <td>Redes</td>
+                            <td>${red}h</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.redes}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.redes}h</td>
+                        </tr>
+                        <tr>
+                            <td>Informática (Outras)</td>
+                            <td>${totals.informaticaOutras || 0}h</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.informaticaOutras}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.informaticaOutras}h</td>
+                        </tr>
+                        <tr>
+                            <td>Matemática</td>
+                            <td>${totals.matematica || 0}h</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.matematica}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.matematica}h</td>
+                        </tr>
+                        <tr>
+                            <td>Complementares</td>
+                            <td>${totals.complementares || 0}h</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.complementares}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.complementares}h</td>
+                        </tr>
+                        <tr>
+                            <td>Desenvolvimento (Disciplinas)</td>
+                            <td>${countByTipo('desenvolvimento')}</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.desenvolvimentoDisciplinas}</td>
+                            <td>${MATRIZ_SERRA_ATUAL.desenvolvimentoDisciplinas}</td>
+                        </tr>
+                        <tr>
+                            <td>Redes (Disciplinas)</td>
+                            <td>${countByTipo('redes')}</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.redesDisciplinas}</td>
+                            <td>${MATRIZ_SERRA_ATUAL.redesDisciplinas}</td>
+                        </tr>
+                        <tr>
+                            <td>Informática (Outras) (Disciplinas)</td>
+                            <td>${countByTipo('informaticaOutras')}</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.informaticaOutrasDisciplinas}</td>
+                            <td>${MATRIZ_SERRA_ATUAL.informaticaOutrasDisciplinas}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Carga Horária total de Disciplinas Obrigatórias</strong></td>
+                            <td><strong>${obrigatoriasCH}h</strong></td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.obrigatorias}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.obrigatorias}h</td>
+                        </tr>
+                        <tr>
+                            <td>Carga Horária total de Disciplinas Optativas</td>
+                            <td>${optativasCH}h</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.optativas}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.optativas}h</td>
+                        </tr>
+                        <tr>
+                            <td>Carga Horária total de Disciplinas Extensão</td>
+                            <td>${extensaoCH}h</td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.extensao}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.extensao}h</td>
+                        </tr>
+                        <tr>
+                            <td>Atividades Culturais / Complementares</td>
+                            <td>
+                                <input id="input-atividades" type="text" value="${extrasAtividades}" style="width:80px" /> h
+                            </td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.atividadesComplementares}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.atividadesComplementares}h</td>
+                        </tr>
+                        <tr>
+                            <td>Estágio Obrigatório</td>
+                            <td>
+                                <input id="input-estagio" type="text" value="${extrasEstagio}" style="width:80px" /> h
+                            </td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.estagio}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.estagio}h</td>
+                        </tr>
+                        <tr class="summary-highlight">
+                            <td><strong>Total</strong></td>
+                            <td><strong>${totalFinalProposta}h</strong></td>
+                            <td>${MATRIZ_CACHOEIRO_ATUAL.totalFinal}h</td>
+                            <td>${MATRIZ_SERRA_ATUAL.totalFinal}h</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:8px;font-size:12px;color:#666;">Matriz Proposta — CH Desenvolvimento: ${formatPercent(pct.desenvolvimento)} • CH Redes: ${formatPercent(pct.redes)} • Comparativo (somente Desenv. vs Redes): ${formatPercent(devPctOnly)} vs ${formatPercent(redPctOnly)}</div>
+                <div style="margin-top:4px;font-size:12px;color:#666;">Matriz Cachoeiro Atual (01/03/13) — CH Desenvolvimento: ${formatPercent(pctDevCach)} • CH Redes: ${formatPercent(pctRedCach)} • Comparativo (somente Desenv. vs Redes): ${formatPercent(devPctOnlyCach)} vs ${formatPercent(redPctOnlyCach)}</div>
+            `;
+
+            // Lidar com edição dos campos e persistência
+            const bindNumberInput = (id, key) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', (e) => {
+                    const raw = (e.target.value || '').toString();
+                    const n = parseInt(raw.replace(/\D/g, ''), 10);
+                    window.proposalExtras[key] = isNaN(n) ? 0 : n;
+                    try { localStorage.setItem('proposalExtras', JSON.stringify(window.proposalExtras)); } catch (e) {}
+                    updateSummary();
+                });
+            };
+
+            bindNumberInput('input-atividades', 'atividadesComplementares');
+            bindNumberInput('input-estagio', 'estagioObrigatorio');
+
+            // Restaurar foco e posição do cursor após o re-render
+            if (prevFocusId === 'input-atividades' || prevFocusId === 'input-estagio') {
+                const el = document.getElementById(prevFocusId);
+                if (el) {
+                    el.focus();
+                    const len = el.value ? el.value.length : 0;
+                    const pos = (prevSelectionStart == null) ? len : Math.min(prevSelectionStart, len);
+                    try { el.setSelectionRange(pos, pos); } catch (e) { /* ignore */ }
+                }
+            }
+        }
+
+        // Funções de alinhamento e distribuição
+        function alignHorizontal() {
+            if (selectedElements.length < 2) return;
+
+            // Calcular a posição média horizontal
+            let sum = 0;
+            for (let el of selectedElements) {
+                sum += el.offsetLeft + el.offsetWidth / 2;
+            }
+            const centerX = sum / selectedElements.length;
+
+            // Alinhar todos os elementos selecionados pelo centro
+            for (let el of selectedElements) {
+                el.style.left = (centerX - el.offsetWidth / 2) + 'px';
+            }
+        }
+
+        function alignVertical() {
+            if (selectedElements.length < 2) return;
+
+            // Calcular a posição média vertical
+            let sum = 0;
+            for (let el of selectedElements) {
+                sum += el.offsetTop + el.offsetHeight / 2;
+            }
+            const centerY = sum / selectedElements.length;
+
+            // Alinhar todos os elementos selecionados pelo centro
+            for (let el of selectedElements) {
+                el.style.top = (centerY - el.offsetHeight / 2) + 'px';
+            }
+        }
+
+        function distributeHorizontal() {
+            if (selectedElements.length < 3) return;
+
+            // Ordenar elementos por posição horizontal
+            const sorted = [...selectedElements].sort((a, b) => a.offsetLeft - b.offsetLeft);
+
+            // Obter primeiro e último elemento
+            const first = sorted[0];
+            const last = sorted[sorted.length - 1];
+
+            // Calcular o espaço disponível
+            const totalSpace = last.offsetLeft - first.offsetLeft;
+            const spacing = totalSpace / (sorted.length - 1);
+
+            // Distribuir elementos uniformemente
+            for (let i = 1; i < sorted.length - 1; i++) {
+                sorted[i].style.left = (first.offsetLeft + spacing * i) + 'px';
+            }
+        }
+
+        function distributeVertical() {
+            if (selectedElements.length < 3) return;
+
+            // Ordenar elementos por posição vertical
+            const sorted = [...selectedElements].sort((a, b) => a.offsetTop - b.offsetTop);
+
+            // Obter primeiro e último elemento
+            const first = sorted[0];
+            const last = sorted[sorted.length - 1];
+
+            // Calcular o espaço disponível
+            const totalSpace = last.offsetTop - first.offsetTop;
+            const spacing = totalSpace / (sorted.length - 1);
+
+            // Distribuir elementos uniformemente
+            for (let i = 1; i < sorted.length - 1; i++) {
+                sorted[i].style.top = (first.offsetTop + spacing * i) + 'px';
+            }
+        }
+
+        function clearSelection() {
+            const boxes = document.querySelectorAll('.box.selected');
+            boxes.forEach(box => box.classList.remove('selected'));
+            selectedElements = [];
+        }
+
+        // Função para exportar como SVG
+        function exportToSVG() {
+            const canvas = document.getElementById('canvas');
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
+                <rect width="${width}" height="${height}" fill="#f5f5f5"/>
+                <text x="${width / 2}" y="30" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle">Grade Curricular - Sistemas de Informação</text>`;
+
+            // Adicionar linhas dos períodos
+            const columnLines = document.querySelectorAll('.column-line');
+            columnLines.forEach(line => {
+                const left = parseInt(line.style.left);
+                svgContent += `<line x1="${left}" y1="60" x2="${left}" y2="780" stroke="#888" stroke-width="1" stroke-dasharray="5,5"/>`;
+            });
+
+            // Adicionar labels dos períodos
+            const periodLabels = document.querySelectorAll('.period-label');
+            periodLabels.forEach(label => {
+                const left = parseInt(label.style.left) + 75; // centro
+                const top = parseInt(label.style.top) + 15;  // ajuste vertical
+                svgContent += `<text x="${left}" y="${top + 30}" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle">${label.textContent}</text>`;
+            });
+
+            // Adicionar as disciplinas
+            const boxes = document.querySelectorAll('.box');
+            boxes.forEach(box => {
+                const left = box.offsetLeft;
+                const top = box.offsetTop;
+                const type = box.getAttribute('data-type');
+                const fill = categories[type].color;
+
+                // Altura aumentada para 70px
+                svgContent += `<rect x="${left}" y="${top}" width="100" height="70" rx="5" fill="${fill}" stroke="#333"/>`;
+
+                // Textos da disciplina com quebra de linha inteligente
+                const nomeCompleto = box.querySelector('strong').innerText;
+                const cargaHoraria = box.innerText.split('\n')[1];
+
+                // Quebrar o nome em múltiplas linhas se necessário
+                const nomeLinhas = quebrarTexto(nomeCompleto, 12); // Máximo de 12 caracteres por linha
+
+                // Posicionar texto com espaçamento adequado
+                let posY = top + 25;
+
+                // Adicionar cada linha do nome
+                nomeLinhas.forEach(linha => {
+                    svgContent += `<text x="${left + 50}" y="${posY}" font-family="Arial" font-size="11" font-weight="bold" text-anchor="middle">${linha}</text>`;
+                    posY += 15; // Espaçamento entre linhas
+                });
+
+                // Adicionar carga horária
+                svgContent += `<text x="${left + 50}" y="${top + 60}" font-family="Arial" font-size="11" text-anchor="middle">${cargaHoraria}</text>`;
+            });
+
+            // Adicionar os totais de carga horária dos períodos
+            const periodTotals = document.querySelectorAll('.period-total');
+            periodTotals.forEach(total => {
+                const left = parseInt(total.style.left) + 55; // Centro do elemento total
+                const top = parseInt(total.style.top) + 15;   // Ajuste vertical
+                svgContent += `<rect x="${left - 55}" y="${top - 15}" width="110" height="25" rx="5" fill="#f0f0f0" stroke="#ddd"/>`;
+                svgContent += `<text x="${left}" y="${top}" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle">${total.innerText}</text>`;
+            });
+
+            // Legenda
+            svgContent += `<g transform="translate(50, 680)">`;
+            let legendX = 0;
+            let legendY = 0;
+            let count = 0;
+
+            for (let id in categories) {
+                svgContent += `
+                    <rect x="${legendX}" y="${legendY}" width="15" height="15" fill="${categories[id].color}"/>
+                    <text x="${legendX + 20}" y="${legendY + 12}" font-family="Arial" font-size="12">${categories[id].name}</text>
+                `;
+
+                count++;
+                if (count % 5 === 0) { // Aumentado para 5 itens por linha
+                    // Nova linha na legenda
+                    legendY += 25;
+                    legendX = 0;
+                } else {
+                    // Próxima coluna
+                    legendX += 150; // Reduzido para caber mais itens
+                }
+            }
+
+            svgContent += `</g>`;
+            svgContent += '</svg>';
+
+            // Criar um link para download
+            const link = document.createElement('a');
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            link.href = URL.createObjectURL(blob);
+            link.download = 'grade_curricular.svg';
+            link.click();
+        }
+
+        // Função para quebrar texto em múltiplas linhas
+        function quebrarTexto(texto, tamMaxLinha) {
+            if (texto.length <= tamMaxLinha) {
+                return [texto];
+            }
+
+            const palavras = texto.split(' ');
+            const linhas = [];
+            let linhaAtual = palavras[0];
+
+            for (let i = 1; i < palavras.length; i++) {
+                const palavra = palavras[i];
+
+                // Se adicionar a próxima palavra não exceder o tamanho máximo
+                if ((linhaAtual + ' ' + palavra).length <= tamMaxLinha) {
+                    linhaAtual += ' ' + palavra;
+                } else {
+                    // Senão, adiciona a linha atual ao resultado e começa uma nova linha
+                    linhas.push(linhaAtual);
+                    linhaAtual = palavra;
+                }
+            }
+
+            // Adiciona a última linha
+            if (linhaAtual.length > 0) {
+                linhas.push(linhaAtual);
+            }
+
+            return linhas;
+        }
+
+        // Função para determinar o período baseado na posição X do clique
+        function determinarPeriodo(clientX) {
+            const canvas = document.getElementById('canvas');
+            const canvasRect = canvas.getBoundingClientRect();
+            const relativeX = clientX - canvasRect.left;
+
+            // Limites dos períodos
+            // Cada coluna tem 175px de largura
+            const limites = [
+                { max: 175, periodo: 1 },  // 1° período: 0 até 175px
+                { max: 350, periodo: 2 },  // 2° período: 175 até 350px
+                { max: 525, periodo: 3 },  // 3° período: 350 até 525px
+                { max: 700, periodo: 4 },  // 4° período: 525 até 700px
+                { max: 875, periodo: 5 },  // 5° período: 700 até 875px
+                { max: 1050, periodo: 6 }, // 6° período: 875 até 1050px
+                { max: 1225, periodo: 7 }, // 7° período: 1050 até 1225px
+                { max: 1400, periodo: 8 }  // 8° período: 1225 até 1400px
+            ];
+
+            for (const limite of limites) {
+                if (relativeX <= limite.max) {
+                    return limite.periodo;
+                }
+            }
+
+            return 8; // Padrão para o 8° período, caso esteja além do último limite
+        }
+
+        // Função para atualizar o dropdown de categorias no modal de disciplinas
+        function updateDisciplineCategoryDropdown() {
+            const dropdown = document.getElementById('disciplineCategory');
+            dropdown.innerHTML = '';
+
+            for (let id in categories) {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = categories[id].name;
+                dropdown.appendChild(option);
+            }
+        }
+
+        // Função para salvar uma nova disciplina
+        function saveNewDiscipline() {
+            const nome = document.getElementById('disciplineName').value.trim();
+            const cargaHoraria = document.getElementById('disciplineCH').value.trim();
+            const tipo = document.getElementById('disciplineCategory').value;
+
+            if (nome && cargaHoraria) {
+                // Calcular posição com base no período
+                let left = 90; // Posição padrão para o 1° período
+
+                // Ajustar left de acordo com o período
+                if (currentPeriod > 1) {
+                    left = 90 + ((currentPeriod - 1) * 150);
+                }
+
+                // Criar a nova disciplina
+                const box = document.createElement('div');
+                box.className = `box ${tipo}`;
+                box.innerHTML = `<strong>${nome}</strong><br>${cargaHoraria}`;
+
+                // Usar a posição do clique como ponto de partida
+                const canvas = document.getElementById('canvas');
+                const canvasRect = canvas.getBoundingClientRect();
+                const relativeY = clickY - canvasRect.top;
+
+                box.style.left = `${left}px`;
+                box.style.top = `${relativeY}px`;
+                box.setAttribute('data-id', nextDisciplineId);
+                box.setAttribute('data-type', tipo);
+                box.setAttribute('data-period', currentPeriod);
+                box.setAttribute('data-ch', cargaHoraria);
+                nextDisciplineId++; // Incrementar o ID para a próxima disciplina
+
+                // Adicionar a disciplina ao canvas primeiro para que os eventos funcionem corretamente
+                canvas.appendChild(box);
+
+                // Adicionar evento de mousedown para selecionar/desselecionar
+                box.addEventListener('mousedown', function (e) {
+                    // Apenas o botão esquerdo
+                    if (e.button !== 0) return;
+
+                    // Se ctrl não estiver pressionado, limpar seleção anterior
+                    if (!ctrlPressed) {
+                        clearSelection();
+                    }
+
+                    // Alternar seleção do elemento atual
+                    if (box.classList.contains('selected') && ctrlPressed) {
+                        box.classList.remove('selected');
+                        selectedElements = selectedElements.filter(el => el !== box);
+                    } else {
+                        box.classList.add('selected');
+                        if (!selectedElements.includes(box)) {
+                            selectedElements.push(box);
+                        }
+                    }
+
+                    e.stopPropagation();
+                });
+
+                // Adicionar menu de contexto
+                box.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+
+                    // Esconder o menu de contexto do canvas se estiver visível
+                    document.getElementById('canvasContextMenu').style.display = 'none';
+
+                    // Armazenar a referência do elemento alvo
+                    currentContextMenuTarget = box;
+
+                    // Posicionar e mostrar o menu de contexto
+                    const contextMenu = document.getElementById('contextMenu');
+                    contextMenu.style.left = `${e.pageX}px`;
+                    contextMenu.style.top = `${e.pageY}px`;
+                    contextMenu.style.display = 'block';
+
+                    e.stopPropagation();
+                });
+
+                // Agora selecione o elemento para que ele possa ser movido
+                clearSelection();
+                box.classList.add('selected');
+                selectedElements.push(box);
+
+                // Adicionar funcionalidade de arrastar
+                makeDraggable(box);
+
+                // Recalcular os totais de carga horária
+                calculatePeriodTotals();
+
+                // Atualizar legenda com novos totais por categoria
+                createLegend();
+
+                // Fechar o modal
+                document.getElementById('addDisciplineModal').style.display = 'none';
+
+                // Limpar campos
+                document.getElementById('disciplineName').value = '';
+                document.getElementById('disciplineCH').value = '';
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Matriz Serra Atual – SI (01/01/2024)</title>
+    <style>
+        :root {
+            --bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text: #222;
+            --muted: #666;
+            --border: #ddd;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        header {
+            padding: 20px 16px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0 0 6px 0;
+            font-size: 22px;
+        }
+
+        header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 12px 28px;
+            box-sizing: border-box;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(8, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .period {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .period-header {
+            padding: 10px 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+            background: #fafafa;
+            text-align: center;
+        }
+
+        .discipline-list {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .card {
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .card-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .card-meta {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        /* Cores por categoria (reutilizando classes existentes) */
+        .complementares { background-color: #DDA0DD; }
+        .matematica { background-color: #A3D977; }
+        .desenvolvimento { background-color: #FFEB3B; }
+        .informaticaOutras { background-color: #FFB656; }
+        .redes { background-color: #38a2dc; }
+
+        .legend {
+            margin-top: 18px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border: 1px solid #333;
+            border-radius: 3px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Matriz Serra Atual – Sistemas de Informação</h1>
+        <p>Versão de 01/01/2024 • Visualização em tabela por período</p>
+    </header>
+
+    <div class="container">
+        <div id="grid" class="grid"></div>
+        <div id="legend" class="legend"></div>
+    </div>
+
+    <script>
+        // Definições de categorias e suas cores
+        const categories = {
+            'complementares': { name: 'Complementares', color: '#DDA0DD' },
+            'matematica': { name: 'Matemática', color: '#A3D977' },
+            'desenvolvimento': { name: 'Desenvolvimento', color: '#FFEB3B' },
+            'redes': { name: 'Redes', color: '#38a2dc' },
+            'informaticaOutras': { name: 'Informática (Outras)', color: '#FFB656' },
+        };
+
+        // Dados das disciplinas da Matriz Serra Atual (01/01/2024)
+        const disciplinas = [
+            // 1º período
+            { id: 1, nome: "Introdução ao Computador", cargaHoraria: "30h", left: 37.5, top: 80, tipo: "informaticaOutras", periodo: 1 },
+            { id: 2, nome: "Programação I", cargaHoraria: "90h", left: 37.5, top: 155, tipo: "desenvolvimento", periodo: 1 },
+            { id: 3, nome: "Lógica", cargaHoraria: "60h", left: 37.5, top: 230, tipo: "matematica", periodo: 1 },
+            { id: 4, nome: "Introdução a Sistemas de Informação", cargaHoraria: "60h", left: 37.5, top: 305, tipo: "informaticaOutras", periodo: 1 },
+            { id: 5, nome: "Sociologia", cargaHoraria: "30h", left: 37.5, top: 380, tipo: "complementares", periodo: 1 },
+            { id: 6, nome: "Comunicação e Expressão", cargaHoraria: "30h", left: 37.5, top: 455, tipo: "complementares", periodo: 1 },
+
+            // 2º período
+            { id: 7, nome: "Teoria Geral da Administração", cargaHoraria: "60h", left: 212.5, top: 80, tipo: "complementares", periodo: 2 },
+            { id: 8, nome: "Programação II", cargaHoraria: "90h", left: 212.5, top: 155, tipo: "desenvolvimento", periodo: 2 },
+            { id: 9, nome: "Introdução ao Cálculo", cargaHoraria: "60h", left: 212.5, top: 230, tipo: "matematica", periodo: 2 },
+            { id: 10, nome: "Laboratório de Sistemas de Informação", cargaHoraria: "60h", left: 212.5, top: 305, tipo: "desenvolvimento", periodo: 2 },
+            { id: 11, nome: "Informática e Sociedade", cargaHoraria: "30h", left: 212.5, top: 380, tipo: "informaticaOutras", periodo: 2 },
+            { id: 12, nome: "Metodologia da Pesquisa", cargaHoraria: "30h", left: 212.5, top: 455, tipo: "complementares", periodo: 2 },
+
+            // 3º período
+            { id: 13, nome: "Arquitetura e Organização de Computadores", cargaHoraria: "60h", left: 387.5, top: 80, tipo: "redes", periodo: 3 },
+            { id: 14, nome: "Estruturas de Dados", cargaHoraria: "60h", left: 387.5, top: 155, tipo: "desenvolvimento", periodo: 3 },
+            { id: 15, nome: "Matemática Discreta", cargaHoraria: "60h", left: 387.5, top: 230, tipo: "matematica", periodo: 3 },
+            { id: 16, nome: "Teoria Geral de Sistemas", cargaHoraria: "60h", left: 387.5, top: 305, tipo: "informaticaOutras", periodo: 3 },
+            { id: 17, nome: "Administração Financeira", cargaHoraria: "60h", left: 387.5, top: 380, tipo: "complementares", periodo: 3 },
+
+            // 4º período
+            { id: 18, nome: "Sistemas Operacionais", cargaHoraria: "60h", left: 562.5, top: 80, tipo: "redes", periodo: 4 },
+            { id: 19, nome: "Programação Orientada a Objetos", cargaHoraria: "60h", left: 562.5, top: 155, tipo: "desenvolvimento", periodo: 4 },
+            { id: 20, nome: "Cálculo I", cargaHoraria: "60h", left: 562.5, top: 230, tipo: "matematica", periodo: 4 },
+            { id: 21, nome: "Gerência de Processos de Negócios", cargaHoraria: "30h", left: 562.5, top: 305, tipo: "complementares", periodo: 4 },
+            { id: 22, nome: "Análise de Sistemas", cargaHoraria: "60h", left: 562.5, top: 380, tipo: "desenvolvimento", periodo: 4 },
+            { id: 23, nome: "Banco de Dados I", cargaHoraria: "60h", left: 562.5, top: 455, tipo: "desenvolvimento", periodo: 4 },
+
+            // 5º período
+            { id: 24, nome: "Redes de Computadores", cargaHoraria: "60h", left: 737.5, top: 80, tipo: "redes", periodo: 5 },
+            { id: 25, nome: "Administração da Produção e Logística", cargaHoraria: "30h", left: 737.5, top: 155, tipo: "complementares", periodo: 5 },
+            { id: 26, nome: "Álgebra Linear", cargaHoraria: "60h", left: 737.5, top: 230, tipo: "matematica", periodo: 5 },
+            { id: 27, nome: "Optativa I", cargaHoraria: "60h", left: 737.5, top: 305, tipo: "informaticaOutras", periodo: 5 },
+            { id: 28, nome: "Desenvolvimento Web", cargaHoraria: "60h", left: 737.5, top: 380, tipo: "desenvolvimento", periodo: 5 },
+            { id: 29, nome: "Projeto de Sistemas", cargaHoraria: "60h", left: 737.5, top: 455, tipo: "desenvolvimento", periodo: 5 },
+
+            // 6º período
+            { id: 30, nome: "Técnicas de Programação Avançada", cargaHoraria: "60h", left: 912.5, top: 80, tipo: "desenvolvimento", periodo: 6 },
+            { id: 31, nome: "Probabilidade e Estatística I", cargaHoraria: "60h", left: 912.5, top: 155, tipo: "matematica", periodo: 6 },
+            { id: 32, nome: "Inteligência de Negócios", cargaHoraria: "60h", left: 912.5, top: 230, tipo: "complementares", periodo: 6 },
+            { id: 33, nome: "Engenharia de Software", cargaHoraria: "60h", left: 912.5, top: 305, tipo: "desenvolvimento", periodo: 6 },
+            { id: 34, nome: "Gerência de Projetos de Software", cargaHoraria: "60h", left: 912.5, top: 380, tipo: "desenvolvimento", periodo: 6 },
+
+            // 7º período
+            { id: 35, nome: "Inteligência Artificial", cargaHoraria: "60h", left: 1087.5, top: 80, tipo: "desenvolvimento", periodo: 7 },
+            { id: 36, nome: "Optativa II", cargaHoraria: "30h", left: 1087.5, top: 155, tipo: "informaticaOutras", periodo: 7 },
+            { id: 37, nome: "Arquitetura Organizacional de TI", cargaHoraria: "60h", left: 1087.5, top: 230, tipo: "informaticaOutras", periodo: 7 },
+            { id: 38, nome: "Extensão I", cargaHoraria: "75h", left: 1087.5, top: 305, tipo: "informaticaOutras", periodo: 7 },
+            { id: 39, nome: "Extensão II", cargaHoraria: "75h", left: 1087.5, top: 380, tipo: "informaticaOutras", periodo: 7 },
+
+            // 8º período
+            { id: 40, nome: "Fundamentos de Programação Paralela e Dis.", cargaHoraria: "30h", left: 1262.5, top: 80, tipo: "desenvolvimento", periodo: 8 },
+            { id: 41, nome: "Optativa III", cargaHoraria: "60h", left: 1262.5, top: 155, tipo: "informaticaOutras", periodo: 8 },
+            { id: 42, nome: "Empreendedorismo", cargaHoraria: "60h", left: 1262.5, top: 230, tipo: "complementares", periodo: 8 },
+            { id: 43, nome: "Extensão III", cargaHoraria: "75h", left: 1262.5, top: 305, tipo: "informaticaOutras", periodo: 8 },
+            { id: 44, nome: "Extensão IV", cargaHoraria: "75h", left: 1262.5, top: 380, tipo: "informaticaOutras", periodo: 8 }
+        ];
+
+        function buildGrid() {
+            const grid = document.getElementById('grid');
+            const periods = Array.from({ length: 8 }, (_, i) => i + 1);
+
+            periods.forEach(periodo => {
+                const periodEl = document.createElement('div');
+                periodEl.className = 'period';
+
+                const headerEl = document.createElement('div');
+                headerEl.className = 'period-header';
+                headerEl.textContent = `${periodo}º Período`;
+                periodEl.appendChild(headerEl);
+
+                const listEl = document.createElement('div');
+                listEl.className = 'discipline-list';
+
+                const items = disciplinas
+                    .filter(d => d.periodo === periodo)
+                    .sort((a, b) => a.top - b.top); // usa a ordem aproximada do layout
+
+                items.forEach(d => {
+                    const card = document.createElement('div');
+                    card.className = `card ${d.tipo}`;
+
+                    const title = document.createElement('div');
+                    title.className = 'card-title';
+                    title.textContent = d.nome;
+
+                    const meta = document.createElement('div');
+                    meta.className = 'card-meta';
+                    meta.textContent = `CH: ${d.cargaHoraria}`;
+
+                    card.appendChild(title);
+                    card.appendChild(meta);
+                    listEl.appendChild(card);
+                });
+
+                periodEl.appendChild(listEl);
+                grid.appendChild(periodEl);
+            });
+        }
+
+        function buildLegend() {
+            const legend = document.getElementById('legend');
+            Object.entries(categories).forEach(([key, cfg]) => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+
+                const color = document.createElement('span');
+                color.className = 'legend-color';
+                color.style.backgroundColor = cfg.color;
+
+                const label = document.createElement('span');
+                label.textContent = cfg.name;
+
+                item.appendChild(color);
+                item.appendChild(label);
+                legend.appendChild(item);
+            });
+        }
+
+        buildGrid();
+        buildLegend();
+    </script>
+</body>
+</html>
