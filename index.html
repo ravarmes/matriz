@@ -345,6 +345,48 @@
         .summary-highlight {
             background-color: #fff6f6;
         }
+
+        /* Destaque da linha em hover na tabela de resumo */
+        .summary-table tbody tr:hover td {
+            background-color: #e6f7ff !important;
+        }
+
+        .summary-table tbody tr td {
+            transition: background-color 0.15s ease-in-out;
+        }
+
+        /* Dashboard comparativo */
+        .dashboard {
+            margin-top: 18px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            width: 100%;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        .dashboard h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+        }
+
+        .chart-section { margin-top: 12px; }
+        .chart-title { font-weight: bold; margin-bottom: 6px; }
+        .bar-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+        .bar-label { width: 220px; font-size: 13px; color: var(--muted); }
+        .bar-container { flex: 1; display: flex; gap: 6px; }
+        .bar { height: 18px; border-radius: 4px; position: relative; min-width: 2px; }
+        .bar span { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.3); }
+        .legend-inline { display: flex; gap: 12px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; border: 1px solid #333; }
+        .stacked { display: flex; }
+        .stacked .bar { border-radius: 0; }
+        .stacked .bar:first-child { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+        .stacked .bar:last-child { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
     </style>
 </head>
 
@@ -394,6 +436,8 @@
 
         <!-- Resumo de totais e percentuais -->
         <div class="summary" id="summary"></div>
+        <!-- Dashboard comparativo -->
+        <div class="dashboard" id="dashboard"></div>
     </div>
 
     <!-- Context Menu -->
@@ -1233,6 +1277,15 @@
             const devPctOnlyCach = baseDevRedCach ? (devCach * 100 / baseDevRedCach) : 0;
             const redPctOnlyCach = baseDevRedCach ? (redCach * 100 / baseDevRedCach) : 0;
 
+            // Percentuais fixos para a Matriz Serra Atual
+            const devSerra = MATRIZ_SERRA_ATUAL.desenvolvimento;
+            const redSerra = MATRIZ_SERRA_ATUAL.redes;
+            const pctDevSerra = MATRIZ_SERRA_ATUAL.total ? (devSerra * 100 / MATRIZ_SERRA_ATUAL.total) : 0;
+            const pctRedSerra = MATRIZ_SERRA_ATUAL.total ? (redSerra * 100 / MATRIZ_SERRA_ATUAL.total) : 0;
+            const baseDevRedSerra = devSerra + redSerra;
+            const devPctOnlySerra = baseDevRedSerra ? (devSerra * 100 / baseDevRedSerra) : 0;
+            const redPctOnlySerra = baseDevRedSerra ? (redSerra * 100 / baseDevRedSerra) : 0;
+
             // Cálculos adicionais para a primeira coluna (Proposta)
             const countByTipo = (tipo) => Array.from(document.querySelectorAll('.box'))
                 .filter(d => d.getAttribute('data-type') === tipo).length;
@@ -1253,9 +1306,9 @@
                     <thead>
                         <tr>
                             <th>Indicador</th>
-                            <th><a href="ifes-si-matrizproposta-2024-09-13.html" target="_blank" rel="noopener">Matriz Cachoeiro Proposta (13/09/24)</a></th>
-                            <th><a href="ifes-si-matriz-2013-03-01.html" target="_blank" rel="noopener">Matriz Cachoeiro Atual (01/03/13)</a></th>
-                            <th><a href="ifes-serra-matriz-2024-01-01.html" target="_blank" rel="noopener">Matriz Serra Atual (01/01/24)</a></th>
+                <th><a href="ifes-si-ci-matrizproposta-2024-09-13.html" target="_blank" rel="noopener">Matriz Cachoeiro Proposta (13/09/24)</a></th>
+                <th><a href="ifes-si-ci-matriz-2013-03-01.html" target="_blank" rel="noopener">Matriz Cachoeiro Atual (01/03/13)</a></th>
+                <th><a href="ifes-si-serra-matriz-2024-01-01.html" target="_blank" rel="noopener">Matriz Serra Atual (01/01/24)</a></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1361,8 +1414,6 @@
                         </tr>
                     </tbody>
                 </table>
-                <div style="margin-top:8px;font-size:12px;color:#666;">Matriz Proposta — CH Desenvolvimento: ${formatPercent(pct.desenvolvimento)} • CH Redes: ${formatPercent(pct.redes)} • Comparativo (somente Desenv. vs Redes): ${formatPercent(devPctOnly)} vs ${formatPercent(redPctOnly)}</div>
-                <div style="margin-top:4px;font-size:12px;color:#666;">Matriz Cachoeiro Atual (01/03/13) — CH Desenvolvimento: ${formatPercent(pctDevCach)} • CH Redes: ${formatPercent(pctRedCach)} • Comparativo (somente Desenv. vs Redes): ${formatPercent(devPctOnlyCach)} vs ${formatPercent(redPctOnlyCach)}</div>
             `;
 
             // Lidar com edição dos campos e persistência
@@ -1390,6 +1441,98 @@
                     const pos = (prevSelectionStart == null) ? len : Math.min(prevSelectionStart, len);
                     try { el.setSelectionRange(pos, pos); } catch (e) { /* ignore */ }
                 }
+            }
+
+            // Renderizar dashboard comparativo
+            const dashboardEl = document.getElementById('dashboard');
+            if (dashboardEl) {
+                const series = [
+                    { name: 'Proposta', color: '#0077cc' },
+                    { name: 'Cachoeiro Atual', color: '#FF9800' },
+                    { name: 'Serra Atual', color: '#4CAF50' },
+                ];
+
+                const maxWidth = 100; // % relativo dentro do container
+
+                const makeBar = (value, maxValue, color) => {
+                    const widthPct = maxValue ? Math.max(2, Math.round(value * 100 / maxValue)) : 0; // mínimo de 2px
+                    return `<div class="bar" style="background:${color}; width:${widthPct}%;"><span>${value}h</span></div>`;
+                };
+
+                const renderRow = (label, values) => {
+                    const maxValue = Math.max(...values);
+                    const bars = values.map((v, i) => makeBar(v, maxValue, series[i].color)).join('');
+                    return `<div class="bar-row"><div class="bar-label">${label}</div><div class="bar-container">${bars}</div></div>`;
+                };
+
+                // Seções do dashboard
+                const totalsSection = `
+                    <div class="chart-section">
+                        <div class="chart-title">Totais por Matriz</div>
+                        ${renderRow('Total Geral', [totalGeral, MATRIZ_CACHOEIRO_ATUAL.total, MATRIZ_SERRA_ATUAL.total])}
+                        ${renderRow('Total Informática', [totalInformatica, MATRIZ_CACHOEIRO_ATUAL.totalInformatica, MATRIZ_SERRA_ATUAL.totalInformatica])}
+                    </div>`;
+
+                const areasSection = `
+                    <div class="chart-section">
+                        <div class="chart-title">Áreas — Comparativo (CH)</div>
+                        ${renderRow('Desenvolvimento', [dev, MATRIZ_CACHOEIRO_ATUAL.desenvolvimento, MATRIZ_SERRA_ATUAL.desenvolvimento])}
+                        ${renderRow('Redes', [red, MATRIZ_CACHOEIRO_ATUAL.redes, MATRIZ_SERRA_ATUAL.redes])}
+                        ${renderRow('Informática (Outras)', [totals.informaticaOutras || 0, MATRIZ_CACHOEIRO_ATUAL.informaticaOutras, MATRIZ_SERRA_ATUAL.informaticaOutras])}
+                        ${renderRow('Matemática', [totals.matematica || 0, MATRIZ_CACHOEIRO_ATUAL.matematica, MATRIZ_SERRA_ATUAL.matematica])}
+                        ${renderRow('Complementares', [totals.complementares || 0, MATRIZ_CACHOEIRO_ATUAL.complementares, MATRIZ_SERRA_ATUAL.complementares])}
+                        <div class="legend-inline">
+                            <div><span class="legend-dot" style="background:${series[0].color}"></span>${series[0].name}</div>
+                            <div><span class="legend-dot" style="background:${series[1].color}"></span>${series[1].name}</div>
+                            <div><span class="legend-dot" style="background:${series[2].color}"></span>${series[2].name}</div>
+                        </div>
+                    </div>`;
+
+                const stackedBar = (label, pDev, pRed) => {
+                    const devW = Math.min(100, Math.max(0, pDev));
+                    const redW = Math.min(100, Math.max(0, pRed));
+                    const devColor = '#0077cc'; // azul escuro para Desenvolvimento
+                    const redColor = '#9C27B0'; // roxo para Redes
+                    return `
+                        <div class="bar-row">
+                            <div class="bar-label">${label}</div>
+                            <div class="bar-container stacked">
+                                <div class="bar" style="background:${devColor}; width:${devW}%"><span>${formatPercent(pDev)}</span></div>
+                                <div class="bar" style="background:${redColor}; width:${redW}%"><span>${formatPercent(pRed)}</span></div>
+                            </div>
+                        </div>`;
+                };
+
+                const pctSection = `
+                    <div class="chart-section">
+                        <div class="chart-title">Comparativo de Percentuais — Desenvolvimento vs Redes</div>
+                        ${stackedBar('Proposta', pct.desenvolvimento, pct.redes)}
+                        ${stackedBar('Cachoeiro Atual', pctDevCach, pctRedCach)}
+                        ${stackedBar('Serra Atual', pctDevSerra, pctRedSerra)}
+                    </div>`;
+
+                const pctOnlySection = `
+                    <div class="chart-section">
+                        <div class="chart-title">Comparativo Normalizado — apenas Desenvolvimento vs Redes</div>
+                        ${stackedBar('Proposta (somente áreas)', devPctOnly, redPctOnly)}
+                        ${stackedBar('Cachoeiro Atual (somente áreas)', devPctOnlyCach, redPctOnlyCach)}
+                        ${stackedBar('Serra Atual (somente áreas)', devPctOnlySerra, redPctOnlySerra)}
+                    </div>`;
+
+                const pctLegendSection = `
+                    <div class="legend-inline">
+                        <div><span class="legend-dot" style="background:#0077cc"></span>Desenvolvimento</div>
+                        <div><span class="legend-dot" style="background:#9C27B0"></span>Redes</div>
+                    </div>`;
+
+                dashboardEl.innerHTML = `
+                    <h3>Dashboard Comparativo</h3>
+                    ${totalsSection}
+                    ${areasSection}
+                    ${pctSection}
+                    ${pctOnlySection}
+                    ${pctLegendSection}
+                `;
             }
         }
 
