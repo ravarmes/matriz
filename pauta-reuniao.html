@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pauta de Reunião — Pontos em Discussão</title>
+    <style>
+        :root {
+            --bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text: #222;
+            --muted: #666;
+            --border: #ddd;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        header {
+            padding: 20px 16px;
+            text-align: center;
+        }
+
+        header h1 { margin: 0 0 6px 0; font-size: 22px; }
+        header p { margin: 0; color: var(--muted); font-size: 13px; }
+
+        .container {
+            width: 100%;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 12px 28px;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        .table-title { margin: 0 0 10px 0; font-size: 18px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+        thead th { background: #fafafa; }
+        tbody tr:hover td { background-color: #e6f7ff; }
+        tbody td { transition: background-color 0.15s ease-in-out; }
+        /* Aumenta a largura da coluna de Ponto e evita quebra de linha */
+        table th:first-child, table td:first-child { width: 800px; white-space: nowrap; }
+
+        .muted { color: var(--muted); font-size: 12px; }
+        .right { text-align: right; }
+        .ok { background-color: #dff0d8; }
+        .warn { background-color: #fff59d; }
+        .pending { background-color: #fde0dc; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Pauta de Reunião — Pontos em Discussão</h1>
+        <p>Tabela de acompanhamento dos principais pontos e referências</p>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h3 class="table-title">Pontos de Pauta</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ponto</th>
+                        <th style="width:160px;" class="right">SI Cachoeiro 2013</th>
+                        <th style="width:160px;" class="right">SI Serra 2024</th>
+                        <th style="width:180px;" class="right">SI Cachoeiro 2025</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1. Carga horária do curso será a mínima?</td>
+                        <td class="right">3075h</td>
+                        <td class="right">3000h</td>
+                        <td class="right ok">3000h</td>
+                    </tr>
+                    <tr>
+                        <td>2. Qual será a carga horária de estágio obrigatório?</td>
+                        <td class="right">480h</td>
+                        <td class="right">435h</td>
+                        <td class="right ok">480h</td>
+                    </tr>
+                    <tr>
+                        <td>3. Qual será a carga horária de atividades complementares?</td>
+                        <td class="right">75h</td>
+                        <td class="right">75h</td>
+                        <td class="right ok">90h</td>
+                    </tr>
+                    <tr>
+                        <td>4. Qual será a carga horária de disciplinas optativas?</td>
+                        <td class="right">150h</td>
+                        <td class="right">150h</td>
+                        <td class="right warn">240h</td>
+                    </tr>
+                    <tr>
+                        <td>5. Qual será a carga horária de disciplinas de Informática? (Desen., Redes e Outras)?</td>
+                        <td class="right">1830h</td>
+                        <td class="right">1740h</td>
+                        <td class="right pending">—</td>
+                    </tr>
+                    <tr>
+                        <td>6. Qual será a proporção da carga horária entre as áreas de Desenvolvimento e Redes?</td>
+                        <td class="right">76/24</td>
+                        <td class="right">83/13</td>
+                        <td class="right pending">—</td>
+                    </tr>
+                    <tr>
+                        <td>7. Como será ofertada a carga horária de extensão?</td>
+                        <td class="right">0</td>
+                        <td class="right">4 disc. 75h</td>
+                        <td class="right pending">—</td>
+                    </tr>
+                    <tr>
+                        <td>8. Qual será o percentual EAD (30% é o máximo — Decreto 12.456)? E a distribuição?</td>
+                        <td class="right">0</td>
+                        <td class="right">156h (5,2%)</td>
+                        <td class="right pending">—</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="muted" style="margin-top:8px;">Destaques: verde = definido; amarelo = em discussão; salmão = à definir.</div>
+        </div>
+
+        <div style="text-align:center; margin-top:12px;">
+            <a href="index.html" style="color:#0077cc;">Voltar para a Matriz</a>
+        </div>
+    </div>
+</body>
+</html>
